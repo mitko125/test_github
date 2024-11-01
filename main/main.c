@@ -1,57 +1,59 @@
 /*
- * SPDX-FileCopyrightText: 2010-2022 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: CC0-1.0
+ * D.Bojilov 2024
  */
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <esp_err.h>
+#include <esp_freertos_hooks.h>
+#include <esp_log.h>
+#include <esp_timer.h>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_chip_info.h"
-#include "esp_flash.h"
+#include "nvs_flash.h"
+#include "esp_event.h"
+#include "esp_netif.h"
+
+#include "status_leds.h"
+
+static const char *TAG = "main";
 
 void app_main(void)
 {
-    printf("Hello world! + uart ехо \n");
+    ESP_LOGI(TAG, "[APP] Startup..");
+    ESP_LOGI(TAG, "[APP] Free memory: %lu bytes", esp_get_free_heap_size());
+    ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
-    /* Print chip information */
-    esp_chip_info_t chip_info;
-    uint32_t flash_size;
-    esp_chip_info(&chip_info);
-    printf("This is %s chip with %d CPU core(s), %s%s%s%s, ",
-           CONFIG_IDF_TARGET,
-           chip_info.cores,
-           (chip_info.features & CHIP_FEATURE_WIFI_BGN) ? "WiFi/" : "",
-           (chip_info.features & CHIP_FEATURE_BT) ? "BT" : "",
-           (chip_info.features & CHIP_FEATURE_BLE) ? "BLE" : "",
-           (chip_info.features & CHIP_FEATURE_IEEE802154) ? ", 802.15.4 (Zigbee/Thread)" : "");
+    // Това работи само при: Component config/Log output/Maximum log verbosity = Verbose
+    //      CONFIG_LOG_MAXIMUM_LEVEL_VERBOSE=y
+    // esp_log_level_set("*", ESP_LOG_INFO);
+    // esp_log_level_set("xpt2046", ESP_LOG_DEBUG);
+    // esp_log_level_set("main", ESP_LOG_VERBOSE);
 
-    unsigned major_rev = chip_info.revision / 100;
-    unsigned minor_rev = chip_info.revision % 100;
-    printf("silicon revision v%d.%d, ", major_rev, minor_rev);
-    if (esp_flash_get_size(NULL, &flash_size) != ESP_OK)
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
-        printf("Get flash size failed");
-        return;
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+        ESP_LOGE(TAG, "nvs_flash_init");
     }
+    ESP_ERROR_CHECK(ret);
 
-    printf("%" PRIu32 "MB %s flash\n", flash_size / (uint32_t)(1024 * 1024),
-           (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
+    ESP_LOGI(TAG, "Start status_leds_task");
+    xTaskCreate(status_leds_task, "status_leds_task", 2 * 4096, NULL, 5, NULL);
 
-    int i = 0;
     while (1)
     {
-        printf("Няма нищо за ехо in %d seconds...\n", i++);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        //vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(10));
         int c = fgetc(stdin);
         if (c > 0)
-        {
-            printf("Ехо \'%c\'\n", c);
-            i = 0;
-        }
+            printf("Echo \'%c\'\n", c);
     }
+
+    vTaskDelete( NULL );
 }
