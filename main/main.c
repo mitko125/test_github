@@ -33,6 +33,7 @@ void app_main(void)
 
 // проба на потребител @mitko125 и проба на проблем #pragma region 
 //направено в main
+//направено в test
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
