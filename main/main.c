@@ -32,6 +32,7 @@ void app_main(void)
     // esp_log_level_set("main", ESP_LOG_VERBOSE);
 
 // проба на потребител @mitko125 и проба на проблем #pragma region 
+//направено в main
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
