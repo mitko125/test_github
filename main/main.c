@@ -46,7 +46,7 @@ void app_main(void)
         ESP_LOGE(TAG, "nvs_flash_init");
     }
     ESP_ERROR_CHECK(ret);
-
+    // Искам да слея test-na-merge с main без да има Publish
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
