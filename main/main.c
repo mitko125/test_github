@@ -52,7 +52,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Start status_leds_task");
     xTaskCreate(status_leds_task, "status_leds_task", 2 * 4096, NULL, 5, NULL);
-
+    // тук добавям в wtori test na merge
     while (1)
     {
         //vTaskDelay(10 / portTICK_PERIOD_MS);
